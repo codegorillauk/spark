@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletRequest
 import scala.xml.Node
 
 import org.apache.spark.deploy.Command
-import org.apache.spark.deploy.mesos.MesosDriverDescription
+import org.apache.spark.deploy.mesos.{config, MesosDriverDescription}
 import org.apache.spark.scheduler.cluster.mesos.{MesosClusterRetryState, MesosClusterSubmissionState}
 import org.apache.spark.ui.{UIUtils, WebUIPage}
 
@@ -38,7 +38,7 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
         <div>
           <p>Cannot find driver {driverId}</p>
         </div>
-      return UIUtils.basicSparkPage(content, s"Details for Job $driverId")
+      return UIUtils.basicSparkPage(request, content, s"Details for Job $driverId")
     }
     val driverState = state.get
     val driverHeaders = Seq("Driver property", "Value")
@@ -67,9 +67,9 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
         retryHeaders, retryRow, Iterable.apply(driverState.description.retryState))
     val content =
       <p>Driver state information for driver id {driverId}</p>
-        <a href={UIUtils.prependBaseUri("/")}>Back to Drivers</a>
-        <div class="row-fluid">
-          <div class="span12">
+        <a href={UIUtils.prependBaseUri(request, "/")}>Back to Drivers</a>
+        <div class="row">
+          <div class="col-12">
             <h4>Driver state: {driverState.state}</h4>
             <h4>Driver properties</h4>
             {driverTable}
@@ -86,14 +86,14 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
           </div>
         </div>;
 
-    UIUtils.basicSparkPage(content, s"Details for Job $driverId")
+    UIUtils.basicSparkPage(request, content, s"Details for Job $driverId")
   }
 
   private def launchedRow(submissionState: Option[MesosClusterSubmissionState]): Seq[Node] = {
     submissionState.map { state =>
       <tr>
-        <td>Mesos Slave ID</td>
-        <td>{state.slaveId.getValue}</td>
+        <td>Mesos Agent ID</td>
+        <td>{state.agentId.getValue}</td>
       </tr>
       <tr>
         <td>Mesos Task ID</td>
@@ -101,7 +101,7 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
       </tr>
       <tr>
         <td>Launch Time</td>
-        <td>{state.startDate}</td>
+        <td>{UIUtils.formatDate(state.startDate)}</td>
       </tr>
       <tr>
         <td>Finish Time</td>
@@ -111,7 +111,7 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
         <td>Last Task Status</td>
         <td>{state.mesosTaskStatus.map(_.toString).getOrElse("")}</td>
       </tr>
-    }.getOrElse(Seq[Node]())
+    }.getOrElse(Seq.empty[Node])
   }
 
   private def propertiesRow(properties: collection.Map[String, String]): Seq[Node] = {
@@ -154,7 +154,14 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
       <td>Memory</td><td>{driver.mem}</td>
     </tr>
     <tr>
-      <td>Submitted</td><td>{driver.submissionDate}</td>
+      <td>Queue</td>
+      <td>
+        {driver.conf.get(
+        "spark.mesos.dispatcher.queue", config.DISPATCHER_QUEUE.defaultValueString)}
+      </td>
+    </tr>
+    <tr>
+      <td>Submitted</td><td>{UIUtils.formatDate(driver.submissionDate)}</td>
     </tr>
     <tr>
       <td>Supervise</td><td>{driver.supervise}</td>
@@ -174,6 +181,6 @@ private[ui] class DriverPage(parent: MesosClusterUI) extends WebUIPage("driver")
           {state.retries}
         </td>
       </tr>
-    }.getOrElse(Seq[Node]())
+    }.getOrElse(Seq.empty[Node])
   }
 }

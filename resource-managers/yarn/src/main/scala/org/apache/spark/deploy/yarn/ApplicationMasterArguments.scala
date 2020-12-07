@@ -19,8 +19,6 @@ package org.apache.spark.deploy.yarn
 
 import scala.collection.mutable.ArrayBuffer
 
-import org.apache.spark.util.{IntParam, MemoryParam}
-
 class ApplicationMasterArguments(val args: Array[String]) {
   var userJar: String = null
   var userClass: String = null
@@ -28,6 +26,7 @@ class ApplicationMasterArguments(val args: Array[String]) {
   var primaryRFile: String = null
   var userArgs: Seq[String] = Nil
   var propertiesFile: String = null
+  var distCacheConf: String = null
 
   parseArgs(args.toList)
 
@@ -64,6 +63,10 @@ class ApplicationMasterArguments(val args: Array[String]) {
           propertiesFile = value
           args = tail
 
+        case ("--dist-cache-conf") :: value :: tail =>
+          distCacheConf = value
+          args = tail
+
         case _ =>
           printUsageAndExit(1, args)
       }
@@ -79,7 +82,7 @@ class ApplicationMasterArguments(val args: Array[String]) {
     userArgs = userArgsBuffer.toList
   }
 
-  def printUsageAndExit(exitCode: Int, unknownParam: Any = null) {
+  def printUsageAndExit(exitCode: Int, unknownParam: Any = null): Unit = {
     // scalastyle:off println
     if (unknownParam != null) {
       System.err.println("Unknown/unsupported param " + unknownParam)

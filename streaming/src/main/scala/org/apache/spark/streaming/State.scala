@@ -17,8 +17,6 @@
 
 package org.apache.spark.streaming
 
-import scala.language.implicitConversions
-
 import org.apache.spark.annotation.Experimental
 
 /**
@@ -120,7 +118,7 @@ sealed abstract class State[S] {
   def isTimingOut(): Boolean
 
   /**
-   * Get the state as a [[scala.Option]]. It will be `Some(state)` if it exists, otherwise `None`.
+   * Get the state as a `scala.Option`. It will be `Some(state)` if it exists, otherwise `None`.
    */
   @inline final def getOption(): Option[S] = if (exists) Some(get()) else None
 
